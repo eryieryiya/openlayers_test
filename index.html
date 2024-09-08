@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>OpenLayers</title>
+    <!-- 导入 OpenLayers 依赖 -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.1.0/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.1.0/ol.css">
+    <!-- 本地CSS -->
+    <link rel="stylesheet" href="css/style_index.css">
+    <!-- 本地js -->
+    <script src="js/index.js"></script>
+    <script src="js/styleConfig.js"></script>
+    <script src="js/BasicMap.js"></script>
+    <style>
+    </style>
+</head>
+
+<body background>
+    
+    <!-- 地图挂载点 -->
+    <div id="map"></div>
+
+    <!-- 控件容器 -->
+    <div id="ClickControl">
+        <label for="eventSelect">选择点击事件:</label>
+        <select id="eventSelect">
+            <option value="none">无</option>
+            <option value="addPoint">添加点要素</option>
+            <option value="logLatLon">返回经纬度</option>
+            <option value="animateZoom">单击漫游</option>
+        </select>
+    </div>
+
+    <!-- 更换底图 -->
+    <!-- 底图选择控件 -->
+    <div id="basemapControl">
+        <label for="basemapSelect">选择底图:</label>
+        <select id="basemapSelect">
+            <option value="v_layer1">天地图矢量</option>
+            <option value="v_layer2">高德卫星</option>
+            <option value="v_layer3">高德大字体</option>
+            <option value="v_layer4">高德电子地图</option>
+        </select>
+    </div>
+
+    <!-- 初始化图层与地图 -->
+    <script>
+        /*基础图层*/
+        var basicMapLayer = v_layer4
+        // 初始化openlayer地图
+        const map = new ol.Map({
+            /*设置地图到 map 挂载点*/
+            target: "map",
+            /*设置图层*/
+            layers: [
+                basicMapLayer
+            ],
+            /*设置视图*/
+            view: new ol.View({
+                center: ol.proj.fromLonLat([120.175, 35.941785]),  // 使用 fromLonLat 转换坐标
+                zoom: 15,
+                projection: "EPSG:3857"  // 使用 EPSG:3857 投影
+            })
+        });
+
+        // 调用封装好的函数，传入地图和图层对象
+        initBasemapControl(map, { v_layer1, v_layer2, v_layer3, v_layer4 });
+        InitMap(map);
+    </script>
+    <!-- 矢量要素 -->
+    <script>
+        /* 1、构建要素 */
+        var point = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([120.175, 35.941785]))
+        })
+        let style = createCircleStyle(7, '#00ff00', '#000000', 1)
+        point.setStyle(style);
+        /* 2、将要素添加到矢量数据源 */
+        const source = new ol.source.Vector({
+            features: [point]
+        })
+        /* 3、将矢量数据源添加到矢量图层 */
+        const layer = new ol.layer.Vector({
+            source
+        })
+        /* 4、将矢量图层添加到地图容器 */
+        map.addLayer(layer)
+    </script>
+    <!-- geojson -->
+    <script>
+        let stylegeo = createCircleStyle(7, '#ff0000', '#000000', 1)
+
+        var data = {
+            type: "FeatureCollection",
+            features: [
+                {
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: ol.proj.fromLonLat([120.165, 35.941785])
+                    }
+                }
+            ]
+        };
+
+        var sourcegeo = new ol.source.Vector({
+            /* 将geojson数据设置给实例数据源 */
+            features: new ol.format.GeoJSON().readFeatures(data)
+        });
+
+        var layergeo = new ol.layer.Vector({
+            source: sourcegeo,  // 修正为 source
+            style: stylegeo  // 使用定义好的样式
+        });
+
+        map.addLayer(layergeo);
+    </script>
+    <!-- geo要素 -->
+    <script>
+        // GeoJSON 数据，包括点、折线、多边形
+        var data = {
+            type: "FeatureCollection",
+            features: [
+                {
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: ol.proj.fromLonLat([120.185, 35.941785])
+                    }
+                },
+                {
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: [
+                            ol.proj.fromLonLat([120.165, 35.941785]),
+                            ol.proj.fromLonLat([120.175, 35.951785]),
+                            ol.proj.fromLonLat([120.185, 35.941785]),
+                            ol.proj.fromLonLat([120.175, 35.931785]),
+                            ol.proj.fromLonLat([120.165, 35.941785])
+                        ]
+                    }
+                },
+                {
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [
+                            [
+                                ol.proj.fromLonLat([120.165, 35.941785]),
+                                ol.proj.fromLonLat([120.175, 35.946785]),
+                                ol.proj.fromLonLat([120.185, 35.941785]),
+                                ol.proj.fromLonLat([120.165, 35.941785])  // 回到起点，闭合多边形
+                            ]
+                        ]
+                    }
+                }
+            ]
+        };
+
+        // 创建矢量数据源
+        var sourcegeo1 = new ol.source.Vector({
+            features: new ol.format.GeoJSON().readFeatures(data)
+        });
+
+        // 创建矢量图层
+        var layergeo1 = new ol.layer.Vector({
+            source: sourcegeo1,
+        });
+
+        // 将矢量图层添加到地图中
+        map.addLayer(layergeo1);
+    </script>
+    <!-- 本地geojson -->
+    <script>
+        const sourcel = new ol.source.Vector({
+            url: 'map.geojson',
+            format: new ol.format.GeoJSON()
+        })
+        const layerl = new ol.layer.Vector({
+            source: sourcel,
+            style:createCircleStyle(10, '#ffffff', "#000000", 1)
+        })
+        
+        map.addLayer(layerl)
+    </script>
+
+    <!-- 网络geojson -->
+    <script>
+        const sourceweb = new ol.source.Vector({
+            url: 'https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=370200',
+            format: new ol.format.GeoJSON()
+        })
+        const layerweb = new ol.layer.Vector({
+            source: sourceweb,
+            zIndex: 1,
+            style:createPolygonStyle('#000000', 2, 'rgba(57,197,187,0.4)')
+        })
+        map.addLayer(layerweb)
+    </script>
+
+    <script>
+        // 调整图层顺序，确保不同类型的图层按照期望的顺序叠加显示
+        basicMapLayer.setZIndex(-1);  // 高德电子地图作为底图
+        layerl.setZIndex(1);    // 本地GeoJSON数据
+        layerweb.setZIndex(2);  // 网络GeoJSON数据
+        layer.setZIndex(3);     // 矢量要素
+    </script>
+
+    <!-- 地图事件 -->
+    <script>
+        // 用于添加点要素的矢量图层
+        var sourceTemp = new ol.source.Vector({});
+        var layerTemp = new ol.layer.Vector({
+            source: sourceTemp
+        });
+        layerTemp.setZIndex(5);
+        map.addLayer(layerTemp);
+
+        // 选择框 DOM 元素
+        const eventSelect = document.getElementById('eventSelect');
+
+        // 当前选择的事件
+        let currentEvent = 'none';
+
+        // 根据选择绑定事件
+        eventSelect.addEventListener('change', function () {
+            currentEvent = this.value;
+        });
+
+        // 处理点击事件
+        map.on('click', function (evt) {
+            var position = evt.coordinate;
+            // 根据用户选择执行不同的操作
+            if (currentEvent === 'addPoint') {
+                PointAdd(layerTemp, position)
+            } else if (currentEvent === 'logLatLon') {
+                ReturnCood(position)
+            } else if (currentEvent === 'animateZoom') {
+                Pan(map, position)
+            }
+        });
+    </script>
+</body>
+
+</html>
